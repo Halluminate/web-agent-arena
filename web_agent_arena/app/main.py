@@ -24,8 +24,9 @@ if static_dir.exists():
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory=str(templates_dir))
 
-# Initialize task manager
-task_manager = TaskManager(Path("web_use_tasks.jsonl"))
+# Initialize task manager with correct path
+tasks_file = Path(__file__).parent.parent / "web_use_tasks.jsonl"
+task_manager = TaskManager(tasks_file)
 
 # Initialize agents
 agent1 = MockWebAgent("Agent A")
