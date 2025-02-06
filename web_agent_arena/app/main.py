@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -33,6 +34,9 @@ agent2 = MockWebAgent("Agent B")
 # Store evaluation results (in memory for now)
 evaluation_results = {}
 
+# Store deployment timestamp
+deployment_time = datetime.now().isoformat()
+
 
 class VoteData(BaseModel):
     evaluation_id: str
@@ -47,6 +51,7 @@ async def health_check():
         "static_files": static_dir.exists(),
         "templates": templates_dir.exists(),
         "tasks_loaded": len(task_manager.get_all_tasks()),
+        "deployment_time": deployment_time,
     }
 
 
@@ -76,8 +81,6 @@ async def run_task(request: Request):
         agent2_response = await agent2.run_task(task)
 
         # Generate a unique evaluation ID
-        from datetime import datetime
-
         evaluation_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Store results
