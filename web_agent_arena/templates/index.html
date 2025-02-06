@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+                <h1 class="text-3xl font-bold text-gray-900">Web Agent Arena</h1>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6">Compare Web Agents</h2>
+
+                <!-- Task Selection -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Task</label>
+                    <select id="taskId" name="task_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary rounded-md">
+                        {% for task in tasks %}
+                        <option value="{{ task.id }}" title="{{ task.task }}">{{ task.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p id="taskDescription" class="mt-2 text-sm text-gray-500 italic"></p>
+                </div>
+
+                <!-- Run Task Button -->
+                <div class="flex justify-center mb-8">
+                    <button id="runTaskBtn" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                        Run Task
+                    </button>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results" class="mt-8 hidden">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Agent Results</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <!-- Task Prompt -->
+                        <div id="taskPrompt" class="mb-6 p-4 bg-white rounded-lg shadow">
+                            <h4 class="font-medium text-gray-900 mb-2">Task</h4>
+                            <div class="text-sm text-gray-700"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div id="agent1Results" class="p-4 bg-white rounded-lg shadow">
+                                <h4 class="font-medium text-gray-900">Agent A</h4>
+                                <div class="mt-2 text-sm text-gray-500"></div>
+                            </div>
+                            <div id="agent2Results" class="p-4 bg-white rounded-lg shadow">
+                                <h4 class="font-medium text-gray-900">Agent B</h4>
+                                <div class="mt-2 text-sm text-gray-500"></div>
+                            </div>
+                        </div>
+
+                        <!-- Voting Section -->
+                        <div id="votingSection" class="mt-8">
+                            <h4 class="text-lg font-medium text-gray-900 mb-4">Which agent performed better?</h4>
+                            <div class="flex justify-center space-x-4">
+                                <button class="vote-btn px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" data-vote="A">
+                                    Agent A
+                                </button>
+                                <button class="vote-btn px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" data-vote="B">
+                                    Agent B
+                                </button>
+                                <button class="vote-btn px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" data-vote="tie">
+                                    Tie
+                                </button>
+                                <button class="vote-btn px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" data-vote="neither">
+                                    Neither
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Vote Confirmation -->
+                        <div id="voteConfirmation" class="mt-4 text-center hidden">
+                            <p class="text-green-600 font-medium">Vote recorded! Thank you for your feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentEvaluationId = null;
+
+        // Add task description update handler
+        document.getElementById('taskId').addEventListener('change', (e) => {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const description = selectedOption.getAttribute('title');
+            document.getElementById('taskDescription').textContent = description;
+        });
+
+        // Trigger description update for initial selection
+        document.addEventListener('DOMContentLoaded', () => {
+            const taskSelect = document.getElementById('taskId');
+            const selectedOption = taskSelect.options[taskSelect.selectedIndex];
+            const description = selectedOption.getAttribute('title');
+            document.getElementById('taskDescription').textContent = description;
+        });
+
+        document.getElementById('runTaskBtn').addEventListener('click', async () => {
+            const taskId = document.getElementById('taskId').value;
+
+            try {
+                const formData = new FormData();
+                formData.append('task_id', taskId);
+
+                const response = await fetch('/run_task', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    return;
+                }
+
+                currentEvaluationId = data.evaluation_id;
+
+                // Show results section
+                const resultsSection = document.getElementById('results');
+                resultsSection.classList.remove('hidden');
+
+                // Update task prompt
+                const taskPrompt = document.querySelector('#taskPrompt .text-sm');
+                taskPrompt.textContent = data.task_prompt;
+
+                // Update agent results
+                const agent1Results = document.querySelector('#agent1Results .text-sm');
+                const agent2Results = document.querySelector('#agent2Results .text-sm');
+
+                agent1Results.textContent = data.agent1_result;
+                agent2Results.textContent = data.agent2_result;
+
+                // Show voting section and hide confirmation
+                document.getElementById('votingSection').classList.remove('hidden');
+                document.getElementById('voteConfirmation').classList.add('hidden');
+
+                // Reset vote button styles
+                document.querySelectorAll('.vote-btn').forEach(btn => {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('bg-white', 'text-gray-700');
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Add click handlers for vote buttons
+        document.querySelectorAll('.vote-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                if (!currentEvaluationId) return;
+
+                try {
+                    const response = await fetch('/vote', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            evaluation_id: currentEvaluationId,
+                            vote: button.dataset.vote
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                        return;
+                    }
+
+                    // Update button styles
+                    document.querySelectorAll('.vote-btn').forEach(btn => {
+                        btn.classList.remove('bg-primary', 'text-white');
+                        btn.classList.add('bg-white', 'text-gray-700');
+                    });
+                    button.classList.remove('bg-white', 'text-gray-700');
+                    button.classList.add('bg-primary', 'text-white');
+
+                    // Show confirmation
+                    document.getElementById('voteConfirmation').classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
