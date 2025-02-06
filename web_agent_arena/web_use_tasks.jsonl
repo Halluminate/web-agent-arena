@@ -2,3 +2,4 @@
 {"name": "Latest news about renewable energy in Europe", "task": "Find and summarize the latest news about renewable energy in Europe.", "metadata": {"category": "search"}}
 {"name": "Weather forecast for Tokyo", "task": "What is the forecast for the weather in Tokyo over the next 7 days?", "metadata": {"category": "weather"}}
 {"name": "Current price of Bitcoin", "task": "What is the current price of Bitcoin?", "metadata": {"category": "crypto"}}
+{"name": "Stock market news", "task": "Find and summarize the latest news about the stock market.", "metadata": {"category": "search"}}
